@@ -6,6 +6,7 @@
 <title>SharkStore — Unlock The Impossible</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://js.stripe.com/v3/"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 :root{--bg:#060608;--card:#111118;--border:#1e1e2e;--pink:#e020b0;--pink2:#ff40d0;--pink-glow:rgba(224,32,176,.4);--white:#f0f0f8;--muted:#888899}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -378,8 +379,15 @@ footer span{color:var(--pink)}
       </div>
       <!-- LOGIN -->
       <div id="loginForm">
-        <div class="form-group"><label class="form-label">Usuario o Correo</label><input class="form-input" id="loginUser" placeholder="admin / tu@correo.com"/></div>
-        <div class="form-group"><label class="form-label">Contraseña</label><input class="form-input" type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/><div class="form-error" id="loginError">Usuario o contraseña incorrectos.</div></div>
+        <div class="form-group"><label class="form-label">Correo Electrónico</label><input class="form-input" id="loginUser" placeholder="tu@correo.com"/></div>
+        <div class="form-group">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">
+            <label class="form-label" style="margin:0">Contraseña</label>
+            <button type="button" onclick="openForgot()" style="background:none;border:none;color:var(--pink);font-size:.78rem;cursor:pointer;font-family:'Inter',sans-serif;padding:0;transition:color .2s" onmouseover="this.style.color='var(--pink2)'" onmouseout="this.style.color='var(--pink)'">¿Olvidaste tu contraseña?</button>
+          </div>
+          <input class="form-input" type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+          <div class="form-error" id="loginError">Usuario o contraseña incorrectos.</div>
+        </div>
         <button class="btn-primary" style="width:100%;justify-content:center;margin-top:.5rem" onclick="doLogin()">🔑 Iniciar Sesión</button>
       </div>
       <!-- REGISTER -->
@@ -391,6 +399,57 @@ footer span{color:var(--pink)}
         <div class="form-group"><label class="form-label">Confirmar Contraseña</label><input class="form-input" type="password" id="regPass2" placeholder="Repite tu contraseña" onkeydown="if(event.key==='Enter')doRegister()"/><div class="form-error" id="regPass2Err">Las contraseñas no coinciden.</div></div>
         <button class="btn-primary" style="width:100%;justify-content:center;margin-top:.5rem" onclick="doRegister()">🦈 Crear Cuenta</button>
       </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- FORGOT PASSWORD MODAL -->
+<div class="modal-overlay" id="forgotModal">
+  <div class="modal" style="max-width:420px">
+    <button class="modal-close" onclick="closeForgot()">✕</button>
+    <div id="forgotStep1">
+      <div class="modal-title">🔑 Recuperar Contraseña</div>
+      <p class="modal-sub">Ingresa tu correo y te enviaremos un código de 6 dígitos.</p>
+      <div class="form-group">
+        <label class="form-label">Correo Electrónico</label>
+        <input class="form-input" id="forgotEmail" type="email" placeholder="tu@correo.com" onkeydown="if(event.key==='Enter')sendResetCode()"/>
+        <div class="form-error" id="forgotEmailErr">No encontramos una cuenta con ese correo.</div>
+      </div>
+      <button class="btn-primary" style="width:100%;justify-content:center;margin-top:.5rem" id="forgotSendBtn" onclick="sendResetCode()">
+        <span id="forgotSendText">📧 Enviar Código</span>
+        <div class="spinner" id="forgotSpinner"></div>
+      </button>
+    </div>
+    <div id="forgotStep2" style="display:none">
+      <div class="modal-title">✅ Código Enviado</div>
+      <p class="modal-sub">Revisa tu correo e ingresa el código de 6 dígitos.</p>
+      <div style="background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:.75rem 1rem;margin-bottom:1.2rem;font-size:.85rem;color:#4ade80">
+        📬 Código enviado a <strong id="forgotEmailDisplay"></strong>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Código de Verificación</label>
+        <input class="form-input" id="forgotCode" placeholder="000000" maxlength="6" style="letter-spacing:.3em;font-size:1.2rem;text-align:center"/>
+        <div class="form-error" id="forgotCodeErr">Código incorrecto.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nueva Contraseña</label>
+        <input class="form-input" type="password" id="forgotNewPass" placeholder="Mínimo 6 caracteres"/>
+        <div class="form-error" id="forgotPassErr">Mínimo 6 caracteres.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirmar Contraseña</label>
+        <input class="form-input" type="password" id="forgotNewPass2" placeholder="Repite tu nueva contraseña" onkeydown="if(event.key==='Enter')confirmReset()"/>
+        <div class="form-error" id="forgotPass2Err">Las contraseñas no coinciden.</div>
+      </div>
+      <button class="btn-primary" style="width:100%;justify-content:center;margin-top:.5rem" onclick="confirmReset()">🔒 Cambiar Contraseña</button>
+      <p style="text-align:center;margin-top:.8rem;font-size:.8rem;color:var(--muted)">¿No recibiste el código? <button onclick="sendResetCode(true)" style="background:none;border:none;color:var(--pink);cursor:pointer;font-size:.8rem;font-family:'Inter',sans-serif">Reenviar</button></p>
+    </div>
+    <div id="forgotStep3" style="display:none;text-align:center;padding:1.5rem 0">
+      <div class="success-icon" style="margin-bottom:1rem">🔐</div>
+      <div class="success-title">¡Contraseña Actualizada!</div>
+      <p style="color:var(--muted);margin-top:.5rem;font-size:.9rem">Ya puedes iniciar sesión con tu nueva contraseña.</p>
+      <button class="btn-primary" style="margin:1.5rem auto 0;display:inline-flex" onclick="closeForgot();openAuthModal()">🔑 Iniciar Sesión</button>
     </div>
   </div>
 </div>
@@ -557,7 +616,7 @@ function doRegister(){
   const username=name.split(' ')[0].toLowerCase()+Math.floor(Math.random()*999);
   const nu={username,password:pass,name,email,discord,role:'user'};
   users.push(nu);saveUsers(users);
-  setCurrentUser(nu);showUserPanel();showToast('¡Cuenta creada! Bienvenido 🦈','green');
+  setCurrentUser(nu);sendWelcomeEmail(nu);showUserPanel();showToast('¡Cuenta creada! Bienvenido 🦈','green');
 }
 function setCurrentUser(u){currentUser=u;sessionStorage.setItem('ss_cur',JSON.stringify(u));updateNav()}
 function logout(){currentUser=null;sessionStorage.removeItem('ss_cur');updateNav();closeAuthModal();showToast('Sesión cerrada','pink')}
@@ -612,6 +671,90 @@ function showToast(msg,type='pink'){
 }
 
 renderProducts();
+
+/* ══════════════════════════════
+   EMAILJS — reemplaza con tus IDs reales de emailjs.com
+══════════════════════════════ */
+const EJS={
+  publicKey:'ZQfhZeJzPcUVJ8NEK',
+  serviceId:'service_tryn4tv', // ⚠️ Reemplaza con tu Service ID real de emailjs.com
+  tplWelcome:'template_msnfk6x',
+  tplReset:'template_fyl27fr',
+};
+(function(){if(typeof emailjs!=='undefined')emailjs.init({publicKey:EJS.publicKey,blockHeadless:false})})();
+
+async function sendWelcomeEmail(user){
+  if(typeof emailjs==='undefined')return;
+  try{
+    await emailjs.send(EJS.serviceId,EJS.tplWelcome,{
+      to_email:user.email,to_name:user.name,
+      discord_tag:user.discord,store_name:'SharkStore',
+      login_url:window.location.href,
+    });
+  }catch(e){console.warn('EmailJS welcome:',e)}
+}
+
+let resetCode='',resetEmail='';
+function openForgot(){
+  closeAuthModal();
+  ['forgotStep2','forgotStep3'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('forgotStep1').style.display='';
+  document.getElementById('forgotEmail').value='';
+  document.getElementById('forgotEmailErr').classList.remove('show');
+  document.getElementById('forgotModal').classList.add('open');
+}
+function closeForgot(){document.getElementById('forgotModal').classList.remove('open')}
+
+async function sendResetCode(resend=false){
+  const emailVal=document.getElementById('forgotEmail').value.trim();
+  document.getElementById('forgotEmailErr').classList.remove('show');
+  const user=getUsers().find(u=>u.email===emailVal);
+  if(!user){document.getElementById('forgotEmailErr').classList.add('show');return}
+  resetCode=String(Math.floor(100000+Math.random()*900000));
+  resetEmail=emailVal;
+  const btn=document.getElementById('forgotSendBtn');
+  const st=document.getElementById('forgotSendText');
+  const sp=document.getElementById('forgotSpinner');
+  btn.disabled=true;st.textContent='Enviando...';sp.style.display='block';
+  if(typeof emailjs!=='undefined'){
+    try{
+      await emailjs.send(EJS.serviceId,EJS.tplReset,{
+        to_email:emailVal,to_name:user.name,
+        reset_code:resetCode,store_name:'SharkStore',
+      });
+    }catch(e){console.warn('EmailJS reset:',e)}
+  }
+  btn.disabled=false;st.textContent='📧 Enviar Código';sp.style.display='none';
+  document.getElementById('forgotEmailDisplay').textContent=emailVal;
+  document.getElementById('forgotStep1').style.display='none';
+  document.getElementById('forgotStep2').style.display='';
+  document.getElementById('forgotCode').value='';
+  document.getElementById('forgotNewPass').value='';
+  document.getElementById('forgotNewPass2').value='';
+  ['forgotCodeErr','forgotPassErr','forgotPass2Err'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  if(resend)showToast('📧 Nuevo código enviado','pink');
+}
+
+function confirmReset(){
+  ['forgotCodeErr','forgotPassErr','forgotPass2Err'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  const code=document.getElementById('forgotCode').value.trim();
+  const pass=document.getElementById('forgotNewPass').value;
+  const pass2=document.getElementById('forgotNewPass2').value;
+  let ok=true;
+  if(code!==resetCode){document.getElementById('forgotCodeErr').classList.add('show');ok=false}
+  if(pass.length<6){document.getElementById('forgotPassErr').classList.add('show');ok=false}
+  if(pass!==pass2){document.getElementById('forgotPass2Err').classList.add('show');ok=false}
+  if(!ok)return;
+  const users=getUsers();
+  const idx=users.findIndex(u=>u.email===resetEmail);
+  if(idx>=0){users[idx].password=pass;saveUsers(users);}
+  resetCode='';resetEmail='';
+  document.getElementById('forgotStep2').style.display='none';
+  document.getElementById('forgotStep3').style.display='';
+  showToast('Contraseña actualizada','green');
+}
+document.getElementById('forgotModal').addEventListener('click',function(e){if(e.target===this)closeForgot()});
+
 </script>
 </body>
 </html>
